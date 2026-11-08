@@ -9,86 +9,156 @@
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.18.0/dist/ort.min.js"></script>
 <style>
-  :root { --bg:#e9edf2; --panel:#ffffff; --ink:#151c27; --onink:#ffffff; --muted:#596579; --line:#d3dae4; --stage:#19212c; }
-  @media (prefers-color-scheme: dark) {
-    :root { --bg:#10151c; --panel:#1a212b; --ink:#e9edf4; --onink:#10151c; --muted:#9aa6b8; --line:#2b3544; --stage:#0b0f15; }
-  }
-  * { box-sizing:border-box; }
-  html { background:var(--bg); }
-  body { margin:0; color:var(--ink); background:var(--bg); font-family:"IBM Plex Sans Thai",system-ui,sans-serif; line-height:1.65;
-         padding:max(28px,env(safe-area-inset-top)) 16px max(24px,env(safe-area-inset-bottom)); }
-  body::before { content:""; position:fixed; inset:0 0 auto 0; height:6px; z-index:5;
-    background:linear-gradient(90deg,#e8590c 0 25%,#12b886 25% 50%,#f08c00 50% 75%,#7048e8 75% 100%); }
-  main { max-width:860px; margin:0 auto; }
-  h1 { font-size:clamp(2rem,6vw,3rem); line-height:1.15; letter-spacing:-.01em; font-weight:700; margin:12px 0 8px; }
-  .sub { margin:0 0 16px; max-width:60ch; color:var(--muted); }
-  .key { list-style:none; margin:0 0 22px; padding:0; display:flex; flex-wrap:wrap; gap:8px; }
-  .key li { display:flex; align-items:center; gap:8px; padding:2px 14px 2px 10px; border:1px solid var(--line); border-radius:99px; background:var(--panel); font-weight:600; }
-  .dot { width:12px; height:12px; border-radius:50%; flex:none; }
-  .stage { position:relative; min-height:300px; display:flex; align-items:center; justify-content:center; padding:14px;
-           background:var(--stage); border-radius:16px; outline:2px dashed transparent; outline-offset:-8px; transition:outline-color .15s; }
-  .stage.drag { outline-color:#ffffffb0; }
-  .stage.wait .empty { opacity:.5; }
-  canvas { max-width:100%; max-height:78vh; width:auto; height:auto; display:block; border-radius:8px; }
-  .empty { color:#c4ccd9; text-align:center; cursor:pointer; padding:24px; }
-  .empty svg { width:56px; height:56px; margin-bottom:8px; stroke:currentColor; fill:none; stroke-width:1.5; stroke-linecap:round; stroke-linejoin:round; }
-  .empty p { margin:0; } .empty strong { color:#fff; font-weight:600; }
-  .panel { margin-top:14px; background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:16px; }
-  .row { display:flex; flex-wrap:wrap; align-items:center; gap:14px 24px; }
-  .pick { background:var(--ink); color:var(--onink); border:0; border-radius:10px; padding:10px 22px; font:inherit; font-weight:600; cursor:pointer; }
-  .pick:hover:not([disabled]) { opacity:.88; }
-  .pick[disabled] { opacity:.4; cursor:not-allowed; }
-  .pick:focus-visible, input[type=range]:focus-visible { outline:3px solid var(--ink); outline-offset:3px; }
-  label.conf { display:flex; align-items:center; gap:10px; color:var(--muted); }
-  input[type=range] { accent-color:var(--ink); width:150px; }
-  #confv { min-width:3ch; color:var(--ink); font-weight:600; }
-  #status { margin-top:12px; color:var(--muted); min-height:1.65em; display:flex; align-items:center; gap:8px; }
-  #status.err { color:#d6336c; }
-  #status.busy::before { content:""; width:14px; height:14px; border:2px solid var(--line); border-top-color:var(--ink); border-radius:50%; animation:spin .8s linear infinite; }
-  @keyframes spin { to { transform:rotate(360deg); } }
-  @media (prefers-reduced-motion: reduce) { #status.busy::before { animation:none; } }
-  ul#list { list-style:none; margin:12px 0 0; padding:0; display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:8px; }
-  ul#list:empty { display:none; }
-  ul#list li { position:relative; overflow:hidden; display:flex; align-items:center; gap:8px; padding:8px 12px 12px; border:1px solid var(--line); border-radius:10px; }
-  ul#list .pc { margin-left:auto; font-weight:600; }
-  ul#list i { position:absolute; left:0; bottom:0; height:4px; }
-  footer { margin:20px 4px 0; color:var(--muted); font-size:.875rem; max-width:64ch; }
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap');
+:root{color-scheme:dark;--bg:#0b1020;--surface:#121a2d;--surface2:#172239;--ink:#edf2ff;--muted:#8f9db8;--line:rgba(160,178,216,.13);--purple:#8978ff;--cyan:#40d9cc;--stage:#080e1b}
+*{box-sizing:border-box}html{min-height:100%;background:var(--bg)}
+body{margin:0;min-height:100vh;color:var(--ink);background:radial-gradient(ellipse at 70% -10%,rgba(92,83,220,.17),transparent 36%),var(--bg);font-family:Inter,'IBM Plex Sans Thai',sans-serif;line-height:1.6}
+button,input{font:inherit}
+.app{min-height:100vh;display:grid;grid-template-columns:238px minmax(0,1fr)}
+.sidebar{position:sticky;top:0;height:100vh;padding:27px 17px;background:rgba(14,21,38,.92);border-right:1px solid var(--line);display:flex;flex-direction:column}
+.brand{display:flex;align-items:center;gap:11px;padding:0 10px 30px;font-weight:800;letter-spacing:.02em;font-size:1.06rem}
+.brand-mark{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;background:linear-gradient(140deg,#9384ff,#4e9cf6);box-shadow:0 8px 22px rgba(117,104,255,.26);font-size:1.05rem}
+.brand small{display:block;color:var(--muted);font-size:.67rem;font-weight:500;letter-spacing:.12em}
+.nav-label{padding:0 11px;margin:8px 0 10px;color:#65738e;font-size:.68rem;font-weight:700;letter-spacing:.13em;text-transform:uppercase}
+.nav-item{display:flex;align-items:center;gap:12px;padding:11px 12px;margin:3px 0;border-radius:10px;color:#9ba9c3;font-size:.88rem;font-weight:500}
+.nav-item.active{color:#fff;background:linear-gradient(90deg,rgba(137,120,255,.2),rgba(137,120,255,.07));box-shadow:inset 3px 0 #9485ff}
+.nav-icon{width:19px;text-align:center;font-size:1rem}
+.sidebar-note{margin-top:auto;padding:14px;border:1px solid var(--line);border-radius:13px;background:rgba(255,255,255,.025);color:var(--muted);font-size:.75rem}
+.sidebar-note strong{display:block;color:#dce5fa;margin-bottom:4px;font-size:.8rem}
+.sidebar-note .online{display:inline-block;width:7px;height:7px;background:#40d9a4;border-radius:50%;margin-right:6px;box-shadow:0 0 10px #40d9a4}
+main{min-width:0;max-width:1450px;width:100%;margin:0 auto;padding:28px clamp(18px,3vw,42px) 42px}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;padding-bottom:24px;border-bottom:1px solid var(--line)}
+.breadcrumb{color:var(--muted);font-size:.8rem}.breadcrumb strong{color:#e5eaff;font-weight:600}
+.profile{display:flex;align-items:center;gap:10px;color:#cbd5e9;font-size:.8rem}
+.avatar{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(145deg,#8b7cff,#39cbbd);font-weight:700;color:#fff}
+.heading{display:flex;justify-content:space-between;align-items:end;gap:18px;margin:27px 0 21px}
+h1{font-size:clamp(1.55rem,3vw,2.1rem);letter-spacing:-.04em;line-height:1.2;margin:0 0 7px;font-weight:800}
+.subtitle{margin:0;color:var(--muted);font-size:.88rem}
+.live-pill{display:inline-flex;align-items:center;gap:8px;padding:7px 11px;border:1px solid rgba(64,217,164,.2);border-radius:99px;background:rgba(64,217,164,.07);color:#77e6b9;font-size:.73rem;font-weight:600;white-space:nowrap}
+.live-pill:before{content:"";width:7px;height:7px;border-radius:50%;background:#40d9a4;box-shadow:0 0 10px #40d9a4}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:13px;margin-bottom:19px}
+.stat-card{position:relative;overflow:hidden;padding:16px 17px;border:1px solid var(--line);border-radius:15px;background:linear-gradient(145deg,rgba(24,35,59,.92),rgba(17,26,45,.88));min-width:0}
+.stat-card:after{content:"";position:absolute;width:78px;height:78px;right:-25px;top:-28px;border-radius:50%;background:var(--glow,rgba(137,120,255,.12));filter:blur(2px)}
+.stat-top{display:flex;justify-content:space-between;align-items:center;color:var(--muted);font-size:.75rem;gap:8px}
+.stat-icon{width:29px;height:29px;border-radius:9px;display:grid;place-items:center;background:var(--iconbg,rgba(137,120,255,.13));color:var(--icon,#a99dff);font-size:.9rem}
+.stat-value{font-size:1.8rem;line-height:1.25;font-weight:800;letter-spacing:-.04em;margin-top:9px;font-variant-numeric:tabular-nums}
+.stat-foot{font-size:.69rem;color:#7787a4;margin-top:3px}
+.workspace{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(280px,.85fr);gap:16px;align-items:start}
+.card{min-width:0;border:1px solid var(--line);border-radius:16px;background:rgba(18,26,45,.88);box-shadow:0 14px 40px rgba(0,0,0,.13)}
+.card-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 18px;border-bottom:1px solid var(--line)}
+.card-title{font-size:.88rem;font-weight:700;color:#e8edff}
+.card-caption{font-size:.7rem;color:#7f8da8}
+.stage{position:relative;min-height:365px;margin:14px;display:flex;align-items:center;justify-content:center;padding:16px;overflow:hidden;background:radial-gradient(circle at 50% 45%,rgba(92,83,220,.09),transparent 50%),var(--stage);border:1px dashed rgba(142,158,193,.23);border-radius:12px;outline:2px dashed transparent;outline-offset:-7px;transition:.2s}
+.stage.drag{outline-color:#9384ff;background:#10182b}
+.stage.wait .empty{opacity:.7}
+canvas{position:relative;max-width:100%;max-height:66vh;width:auto;height:auto;display:block;border-radius:8px;box-shadow:0 10px 30px #0008}
+.empty{position:relative;color:#91a0bb;text-align:center;cursor:pointer;padding:25px}
+.empty svg{width:58px;height:58px;margin-bottom:12px;padding:14px;border-radius:16px;background:rgba(137,120,255,.12);color:#aa9dff;stroke:currentColor;fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.empty p{margin:0;font-size:.82rem}.empty strong{display:block;color:#eaf0ff;font-size:1rem;font-weight:600;margin-bottom:4px}
+.upload-footer{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 17px 16px;flex-wrap:wrap}
+.pick{display:inline-flex;align-items:center;justify-content:center;gap:8px;background:linear-gradient(110deg,#8978ff,#6c73ed);color:white;border:0;border-radius:10px;padding:10px 17px;font-size:.82rem;font-weight:700;cursor:pointer;box-shadow:0 7px 18px rgba(112,101,232,.2);transition:transform .18s,filter .18s}
+.pick:hover:not([disabled]){transform:translateY(-1px);filter:brightness(1.08)}.pick[disabled]{opacity:.4;cursor:not-allowed;box-shadow:none}
+.pick:focus-visible,input[type=range]:focus-visible{outline:3px solid #b4aaff;outline-offset:3px}
+.file-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#8594af;font-size:.72rem}
+.settings{padding:17px 18px}
+.setting-label{display:flex;justify-content:space-between;gap:10px;color:#aab7ce;font-size:.77rem;margin-bottom:9px}
+#confv{color:#d8d1ff;font-weight:700;font-variant-numeric:tabular-nums}
+input[type=range]{accent-color:#9b8fff;width:100%}
+#status{margin-top:14px;padding:10px 11px;border:1px solid var(--line);border-radius:9px;color:#aab8d0;background:rgba(7,13,25,.45);min-height:42px;display:flex;align-items:center;gap:9px;font-size:.73rem}
+#status.err{color:#ff9bad;border-color:rgba(255,107,129,.25);background:rgba(255,107,129,.06)}
+#status.busy:before{content:"";width:13px;height:13px;flex:none;border:2px solid rgba(169,157,255,.22);border-top-color:#a99dff;border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.result-wrap{padding:16px 18px 18px;border-top:1px solid var(--line)}
+.result-heading{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.result-heading strong{font-size:.8rem}.result-heading span{font-size:.68rem;color:var(--muted)}
+ul#list{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr;gap:8px}
+ul#list:empty:after{content:"ผลการตรวจจับจะแสดงที่นี่";color:#65738e;font-size:.75rem;padding:8px 0}
+ul#list li{position:relative;overflow:hidden;display:flex;align-items:center;gap:9px;padding:9px 11px 12px;border:1px solid var(--line);border-radius:9px;background:rgba(7,13,25,.35);color:#e8edfa;font-size:.75rem}
+ul#list .pc{margin-left:auto;font-weight:700;color:#fff;font-variant-numeric:tabular-nums}
+ul#list i{position:absolute;left:0;bottom:0;height:3px;border-radius:0 4px 4px 0}
+footer{margin:18px 3px 0;color:#65738e;font-size:.7rem;text-align:center}
+@media(max-width:1050px){.workspace{grid-template-columns:minmax(0,1.35fr) minmax(260px,.9fr)}.stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:760px){.app{grid-template-columns:1fr}.sidebar{position:relative;height:auto;padding:13px 16px;border-right:0;border-bottom:1px solid var(--line)}.brand{padding:0}.sidebar .nav-label,.sidebar .nav-item,.sidebar-note{display:none}main{padding:20px 14px 30px}.topbar{padding-bottom:15px}.heading{margin:22px 0 17px;align-items:start;flex-direction:column}.workspace{grid-template-columns:1fr}.stage{min-height:300px}.profile span{display:none}}
+@media(max-width:430px){.stats{gap:8px}.stat-card{padding:12px}.stat-value{font-size:1.5rem}.stat-top{font-size:.68rem}.stage{min-height:260px}}
+@media(prefers-reduced-motion:reduce){#status.busy:before{animation:none}*{transition:none!important}}
 </style>
 </head>
 <body>
-<main>
-  <header>
-    <h1>ทายรูปด้วย YOLO</h1>
-    <p class="sub">เลือกรูปที่มีรถ แมว หมา หรือจักรยาน โมเดลจะวาดเส้นรอบวัตถุให้ดู ทุกอย่างรันในเบราว์เซอร์ของคุณ รูปไม่ถูกส่งไปที่ไหน</p>
-    <ul class="key" aria-label="คลาสที่ตรวจได้">
-      <li><span class="dot" style="background:#e8590c"></span>car</li>
-      <li><span class="dot" style="background:#12b886"></span>cat</li>
-      <li><span class="dot" style="background:#f08c00"></span>dog</li>
-      <li><span class="dot" style="background:#7048e8"></span>bike</li>
-    </ul>
-  </header>
-  <section class="stage wait" id="stage">
-    <canvas id="out" hidden aria-label="ผลการทำนาย"></canvas>
-    <div class="empty" id="empty">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="M21 16l-5-5-8 9"/></svg>
-      <p><strong>ลากรูปมาวางตรงนี้</strong><br>หรือกดปุ่มเลือกรูปด้านล่าง</p>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand"><div class="brand-mark">✦</div><div>VISION<span><small>YOLO ANALYTICS</small></span></div></div>
+    <div class="nav-label">WORKSPACE</div>
+    <div class="nav-item active"><span class="nav-icon">▦</span> Image Detection</div>
+    <div class="nav-item"><span class="nav-icon">◫</span> Model Overview</div>
+    <div class="nav-item"><span class="nav-icon">⌁</span> Activity</div>
+    <div class="sidebar-note"><strong><span class="online"></span>Model status</strong>YOLO26n-seg · ONNX Runtime<br>Running locally in browser
     </div>
-  </section>
-  <section class="panel">
-    <div class="row">
-      <button class="pick" id="pick" disabled>เลือกรูป</button>
-      <input type="file" id="file" accept="image/*" hidden>
-      <label class="conf">ความมั่นใจขั้นต่ำ
-        <input type="range" id="conf" min="0.05" max="0.95" step="0.05" value="0.25">
-        <span id="confv">25%</span>
-      </label>
+  </aside>
+  <main>
+    <div class="topbar">
+      <div class="breadcrumb">Workspace <span style="color:#52617d">/</span> <strong>Image Detection</strong></div>
+      <div class="profile"><div class="avatar">AI</div><span>Computer Vision</span></div>
     </div>
-    <div id="status" class="busy">กำลังโหลดโมเดล…</div>
-    <ul id="list"></ul>
-  </section>
-  <footer>โมเดล YOLO26n-seg ฝึกจากชุดรูปขนาดเล็ก 4 คลาส ผลอาจคลาดเคลื่อนกับรูปที่ต่างจากชุดฝึกมาก</footer>
-</main>
+    <section class="heading">
+      <div><h1>Image Detection</h1><p class="subtitle">ตรวจจับและวิเคราะห์วัตถุด้วยโมเดล YOLO ของคุณ</p></div>
+      <div class="live-pill">LOCAL INFERENCE</div>
+    </section>
 
+    <section class="stats" aria-label="Prediction statistics">
+      <div class="stat-card" style="--glow:rgba(137,120,255,.15);--iconbg:rgba(137,120,255,.13);--icon:#aa9dff">
+        <div class="stat-top"><span>Detected Objects</span><span class="stat-icon">▣</span></div>
+        <div class="stat-value" id="statTotal">—</div><div class="stat-foot">วัตถุที่พบในภาพปัจจุบัน</div>
+      </div>
+      <div class="stat-card" style="--glow:rgba(64,217,204,.13);--iconbg:rgba(64,217,204,.11);--icon:#55dfd2">
+        <div class="stat-top"><span>Classes Found</span><span class="stat-icon">◈</span></div>
+        <div class="stat-value" id="statClasses">—</div><div class="stat-foot">จำนวนประเภทวัตถุที่ตรวจพบ</div>
+      </div>
+      <div class="stat-card" style="--glow:rgba(255,185,92,.12);--iconbg:rgba(255,185,92,.1);--icon:#ffc16e">
+        <div class="stat-top"><span>Avg. Confidence</span><span class="stat-icon">◎</span></div>
+        <div class="stat-value" id="statAvg">—</div><div class="stat-foot">ค่าเฉลี่ยความมั่นใจของโมเดล</div>
+      </div>
+      <div class="stat-card" style="--glow:rgba(82,160,255,.13);--iconbg:rgba(82,160,255,.1);--icon:#75b5ff">
+        <div class="stat-top"><span>High Confidence</span><span class="stat-icon">↗</span></div>
+        <div class="stat-value" id="statHigh">—</div><div class="stat-foot">รายการที่มีความมั่นใจตั้งแต่ 80%</div>
+      </div>
+    </section>
+
+    <section class="workspace">
+      <div class="card">
+        <div class="card-head"><div><div class="card-title">Preview & Detection</div><div class="card-caption">อัปโหลดรูปภาพเพื่อเริ่มการตรวจจับ</div></div><span class="card-caption">IMAGE INPUT</span></div>
+        <div class="stage wait" id="stage">
+          <canvas id="out" hidden aria-label="ผลการทำนาย"></canvas>
+          <div class="empty" id="empty">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="M21 16l-5-5-8 9"/></svg>
+            <p><strong>Drop your image here</strong>ลากรูปมาวาง หรือเลือกไฟล์จากอุปกรณ์ของคุณ</p>
+          </div>
+        </div>
+        <div class="upload-footer">
+          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+            <button class="pick" id="pick" disabled>＋ Choose Image</button>
+            <input type="file" id="file" accept="image/*" hidden>
+            <span class="file-name" id="fileName">รองรับไฟล์ภาพ JPG, PNG, WEBP</span>
+          </div>
+          <span class="card-caption">Max preview 1280px</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><div><div class="card-title">Prediction Settings</div><div class="card-caption">ตั้งค่าการตรวจจับวัตถุ</div></div><span class="card-caption">CONFIG</span></div>
+        <div class="settings">
+          <div class="setting-label"><label for="conf">Minimum Confidence</label><span id="confv">25%</span></div>
+          <input type="range" id="conf" min="0.05" max="0.95" step="0.05" value="0.25">
+          <div id="status" class="busy">กำลังโหลดโมเดล…</div>
+        </div>
+        <div class="result-wrap">
+          <div class="result-heading"><strong>Detection Results</strong><span id="resultCount">0 detections</span></div>
+          <ul id="list"></ul>
+        </div>
+      </div>
+    </section>
+    <footer>YOLO26n-seg · ONNX Runtime Web · ประมวลผลภายในเบราว์เซอร์ รูปภาพของคุณไม่ถูกอัปโหลดไปยังเซิร์ฟเวอร์</footer>
+  </main>
+</div>
 <script>
 const MODEL_URL = 'best.onnx';
 const NAMES = ['car', 'cat', 'dog', 'bike'];
@@ -165,6 +235,18 @@ function maskCanvas(det, proto, color) {
   return mc;
 }
 
+function updateDashboard(items) {
+  const total = items.length;
+  const classes = new Set(items.map(it => it.cls)).size;
+  const avg = total ? items.reduce((sum, it) => sum + it.score, 0) / total : 0;
+  const high = items.filter(it => it.score >= 0.8).length;
+  $('statTotal').textContent = total;
+  $('statClasses').textContent = classes;
+  $('statAvg').textContent = total ? (avg * 100).toFixed(1) + '%' : '0%';
+  $('statHigh').textContent = high;
+  $('resultCount').textContent = total + (total === 1 ? ' detection' : ' detections');
+}
+
 async function run() {
   if (!session || !img) return;
   const conf = parseFloat($('conf').value);
@@ -179,6 +261,7 @@ async function run() {
     const res = await session.run({ [session.inputNames[0]]: lb.tensor });
     const det = res[session.outputNames[0]], proto = res[session.outputNames[1]];
     const items = decode(det, conf);
+    updateDashboard(items);
     const lw = Math.max(2, W / 400), fs = Math.max(14, Math.round(W / 40));
     ctx.lineWidth = lw; ctx.font = `600 ${fs}px "IBM Plex Sans Thai", sans-serif`; ctx.textBaseline = 'top';
     for (const it of items) {
@@ -202,7 +285,11 @@ async function run() {
 $('pick').onclick = () => $('file').click();
 function load(f) {
   const im = new Image();
-  im.onload = () => { img = im; out.hidden = false; $('empty').hidden = true; run(); };
+  im.onload = () => {
+    img = im; out.hidden = false; $('empty').hidden = true;
+    $('fileName').textContent = f.name || 'Selected image';
+    run();
+  };
   im.onerror = () => say('เปิดรูปนี้ไม่ได้', true);
   im.src = URL.createObjectURL(f);
 }
